@@ -1,0 +1,24 @@
+# Node dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.*
+
+# Build files
+dist/
+coverage/
+
+# Vue
+.vue/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
