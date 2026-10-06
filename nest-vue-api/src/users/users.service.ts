@@ -1,52 +1,91 @@
-
 import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './create-user.dto';
 
-/*
-  This is the safe user record returned by our API.
-  Notice that it does NOT contain a password.
-*/
-type UserRecord = {
-  id: number;
-  name: string;
-  email: string;
-  age: number;
+export type User = {
+    id: number;
+    name: string;
+    email: string;
+    password: string;
+    age: number;
 };
 
 @Injectable()
 export class UsersService {
+    async  findUserByName(username: string): Promise<User | undefined> {
+        return this.users.find(user => user.name === username);
+    }
 
-  /*
-    Temporary in-memory storage.
-  */
-  private users: UserRecord[] = [];
+    private users: User[] = [];
 
-  // Generate simple IDs for this practice project.
-  private nextId = 1;
+    private nextId = 1;
 
-  // Create a user from the submitted DTO.
-  create(createUserDto: CreateUserDto) {
+    create(createUserDto: CreateUserDto) {
 
-    /*
-      The password is deliberately not stored
-    */
-    const user: UserRecord = {
-      id: this.nextId++,
-      name: createUserDto.name,
-      email: createUserDto.email,
-      age: createUserDto.age,
-    };
+        const user: User= {
+            id: this.nextId++,
+            name: createUserDto.name,
+            email: createUserDto.email,
+            password: createUserDto.password,
+            age: createUserDto.age,
 
-    this.users.push(user);
+        };
 
-    return {
-      message: 'User created successfully!',
-      user,
-    };
-  }
+        this.users.push(user);
 
-  // Return all stored users without passwords.
-  findAll(): UserRecord[] {
-    return this.users;
-  }
+        return {
+            message: 'User created successfully!',
+            user,
+        };
+    }
+
+    login(email: string, password: string) {
+        const user = this.users.find(
+            user => user.email === email,
+        );
+
+        if (!user) {
+            return null;
+        }
+
+        if (user.password !== password) {
+            return null;
+        }
+
+        return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            age: user.age,
+        };
+    }
+
+
+    // GET /users
+    findAll(): User[] {
+        return this.users;
+    }
+
+    // GET /users/list?page=1&limit=5&name=krish
+    getUsers(
+        page: number,
+        limit: number,
+        name?: string,
+    ): User[] {
+
+        // Start with all users
+        let filteredUsers = this.users;
+
+        // Search by name
+        if (name) {
+            filteredUsers = filteredUsers.filter(user =>
+                user.name.toLowerCase().includes(name.toLowerCase()),
+            );
+        }
+
+        // Calculate starting index
+        const start = (page - 1) * limit;
+
+        // Return only 5 users (or whatever limit is provided)
+        return filteredUsers.slice(start, start + limit);
+    }
 }

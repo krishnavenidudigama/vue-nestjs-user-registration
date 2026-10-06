@@ -22,3 +22,8 @@ Thumbs.db
 # IDE files
 .vscode/
 .idea/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
