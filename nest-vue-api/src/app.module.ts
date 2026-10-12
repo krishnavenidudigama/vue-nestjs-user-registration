@@ -21,9 +21,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       autoLoadEntities: true,
       synchronize: true,
     }),
+    EmployeesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}import { NestApplication } from '@nestjs/core';
+import { EmployeesModule } from './employees/employees.module';
 

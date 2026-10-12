@@ -1,47 +1,53 @@
 import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './create-user.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { UserTable } from './entities/user.entity';
 
-export type User = {
-    id: number;
-    name: string;
-    email: string;
-    password: string;
-    age: number;
-};
+// export type User = {
+//     id: number;
+//     name: string;
+//     email: string;
+//     password: string;
+//     age: number;
+// };
 
 @Injectable()
 export class UsersService {
-    async  findUserByName(username: string): Promise<User | undefined> {
-        return this.users.find(user => user.name === username);
+    // Users Entity Repository is injected into the service.
+    constructor(
+        @InjectRepository(UserTable)
+        private readonly userRepository: Repository<UserTable>,
+    ) { }
+
+    async findUserByName(username: string) {
+        return this.userRepository.findOne({
+            where: {
+                name: username,
+            },
+        });
     }
 
-    private users: User[] = [];
-
-    private nextId = 1;
-
-    create(createUserDto: CreateUserDto) {
-
-        const user: User= {
-            id: this.nextId++,
+    async create(createUserDto: CreateUserDto) {
+        const user = this.userRepository.create({
             name: createUserDto.name,
             email: createUserDto.email,
             password: createUserDto.password,
             age: createUserDto.age,
-
-        };
-
-        this.users.push(user);
+        });
+        //SAVE USER TO DATABASE
+        const savedUser = await this.userRepository.save(user);
 
         return {
             message: 'User created successfully!',
-            user,
+            user: savedUser,
         };
     }
 
-    login(email: string, password: string) {
-        const user = this.users.find(
-            user => user.email === email,
-        );
+    async login(email: string, password: string) {
+        const user = await this.userRepository.findOne({
+            where: { email },
+        });
 
         if (!user) {
             return null;
@@ -61,31 +67,87 @@ export class UsersService {
 
 
     // GET /users
-    findAll(): User[] {
-        return this.users;
+    async findAll() {
+        return this.userRepository.find();
     }
 
+    // Find users by age
+    async findUsersByAge(age: number) {
+        return this.userRepository.find({
+            where: {
+                age: age,
+            },
+        });
+    }
+    // UPDATE USER
+    async updateUser(id: number, updateData: Partial<UserTable>) {
+
+        // Update the user in PostgreSQL
+        await this.userRepository.update(id, updateData);
+
+        // Get the updated user and return it
+        return this.userRepository.findOne({
+            where: {
+                id: id,
+            },
+        });
+    }
+    // DELETE USER
+    async deleteUser(id: number) {
+
+        // Delete the user from PostgreSQL
+        const result = await this.userRepository.delete(id);
+
+        return {
+            message: 'User deleted successfully',
+            deleted: result.affected,
+        };
+    }
+
+
     // GET /users/list?page=1&limit=5&name=krish
-    getUsers(
+    async getUsers(
         page: number,
         limit: number,
         name?: string,
-    ): User[] {
+    ): Promise<UserTable[]> {
 
-        // Start with all users
-        let filteredUsers = this.users;
+        // Calculate which records we should skip
+        const skip = (page - 1) * limit;
 
-        // Search by name
+        // Start building the database query
+        const query = this.userRepository
+            .createQueryBuilder('user');
+
+        // If the user searched for a name,
+        // search PostgreSQL for matching names.
         if (name) {
-            filteredUsers = filteredUsers.filter(user =>
-                user.name.toLowerCase().includes(name.toLowerCase()),
-            );
+            query.where('LOWER(user.name) LIKE LOWER(:name)', {
+                name: `%${name}%`,
+            });
         }
 
-        // Calculate starting index
-        const start = (page - 1) * limit;
+        // Pagination
+        query
+            .skip(skip)
+            .take(limit);
 
-        // Return only 5 users (or whatever limit is provided)
-        return filteredUsers.slice(start, start + limit);
+        // Get users from PostgreSQL
+        return query.getMany();
+    }
+    // QUERY BUILDER - SEARCH USERS BY NAME
+    async searchUsers(name: string) {
+
+        const query = this.userRepository
+            .createQueryBuilder('user');
+
+        query.where(
+            'LOWER(user.name) LIKE LOWER(:name)',
+            {
+                name: `%${name}%`,
+            },
+        );
+
+        return query.getMany();
     }
 }

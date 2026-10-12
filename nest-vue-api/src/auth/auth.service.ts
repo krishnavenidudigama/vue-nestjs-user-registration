@@ -16,12 +16,13 @@ export class AuthService {
 
         // Reuse the existing user validation logic.
         private readonly usersService: UsersService,
-    ) {}
+    ) { }
 
     async login(email: string, password: string) {
 
         // Check whether the submitted credentials are correct.
-        const user = this.usersService.login(email, password);
+        // await waits for PostgreSQL to return the user.
+        const user = await this.usersService.login(email, password);
 
         // Never issue a token when credentials are invalid.
         if (!user) {

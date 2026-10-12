@@ -23,7 +23,7 @@ import { UsersModule } from '../users/users.module';
 
         signOptions: {
           expiresIn: (
-            config.get<string>('JWT_EXPIRES_IN') || '1h'
+            config.get<string>('JWT_EXPIRES_IN') || '2d'
           ) as JwtSignOptions['expiresIn'],
         },
       }),

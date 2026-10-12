@@ -1,7 +1,10 @@
 import {
     Body,
     Controller,
+    Delete,
     Get,
+    Param,
+    Patch,
     Post,
     Query,
     UseGuards,
@@ -12,6 +15,7 @@ import { CreateUserDto } from './create-user.dto';
 
 // Our Guard that requires a valid JWT.
 import { JwtAuthGuard } from '../auth/guards/authguard';
+import { UserTable } from './entities/user.entity';
 
 @Controller('users')
 export class UsersController {
@@ -35,16 +39,21 @@ export class UsersController {
             name,
         );
     }
+    // GET /users/search?name=krishna
+    @Get('search')
+    searchUsers(@Query('name') name: string) {
+        return this.usersService.searchUsers(name);
+    }
 
     // POST /users/login
     @Post('login')
-    login(
+    async login(
         @Body() loginData: {
             email: string;
             password: string;
         },
     ) {
-        const user = this.usersService.login(
+        const user = await this.usersService.login(
             loginData.email,
             loginData.password,
         );
@@ -75,5 +84,25 @@ export class UsersController {
     @Get()
     findAll() {
         return this.usersService.findAll();
+    }
+    @Get('age')
+    findByAge(@Query('age') age: string) {
+        return this.usersService.findUsersByAge(Number(age));
+    }
+    // PATCH /users/1
+    @Patch(':id')
+    updateUser(
+        @Param('id') id: string,
+        @Body() updateData: Partial<UserTable>,
+    ) {
+        return this.usersService.updateUser(
+            Number(id),
+            updateData,
+        );
+    }
+    // DELETE /users/1
+    @Delete(':id')
+    deleteUser(@Param('id') id: string) {
+        return this.usersService.deleteUser(Number(id));
     }
 }
