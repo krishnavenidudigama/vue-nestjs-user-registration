@@ -1,107 +1,97 @@
 
 /*
   This file contains functions for communicating
-  with our NestJS Users API.
-
-  Keeping fetch() here prevents App.vue from
-  becoming too complicated.
+  with the NestJS backend.
 */
 
-// Base URL of our NestJS backend.
 const API_URL = 'http://localhost:3000/users';
+const AUTH_URL = 'http://localhost:3000/auth';
 
-/*
-  Create a new user.
-
-  The function receives the data from App.vue,
-  sends it to NestJS, and returns the response.
-*/
+// Register a new user.
+// Registration is public, so no JWT is required.
 export async function createUser(userData) {
     const response = await fetch(API_URL, {
         method: 'POST',
-
-        // Tell NestJS that the request body is JSON.
         headers: {
             'Content-Type': 'application/json',
         },
-
-        // Convert the JavaScript object into JSON.
         body: JSON.stringify(userData),
-    })
+    });
 
-    /*
-      fetch() does not automatically throw an error
-      for HTTP errors such as 400 or 500.
-  
-      We must check response.ok ourselves.
-    */
+    const data = await response.json();
+
     if (!response.ok) {
-        throw new Error(
-            `Request failed with status ${response.status}`,
+        const error = new Error(
+            data.message || 'Registration failed'
         );
+
+        // Store the HTTP status code inside the error.
+        error.statusCode = response.status;
+
+        throw error;
     }
 
-    // Convert the JSON response into a JS object.
-    return response.json()
+    return data;
 }
 
+// Fetch the requested page of users.
+// This endpoint now requires a valid JWT.
 export async function getUsers(page = 1, limit = 5, name = '') {
 
-    // Retrieve the JWT saved when the user logged in.
+    // Read the JWT stored after successful login.
     const token = sessionStorage.getItem('token');
 
-    // Request the paginated users from NestJS.
     const response = await fetch(
-        `http://localhost:3000/users/list?page=${page}&limit=${limit}&name=${encodeURIComponent(name)}`,
+        `${API_URL}/list?page=${page}&limit=${limit}&name=${encodeURIComponent(name)}`,
         {
             headers: {
-                // Send the JWT so NestJS can verify the request.
+                // Send the JWT to NestJS for verification.
                 Authorization: `Bearer ${token}`,
             },
         }
     );
 
-    // Handle missing, invalid, or expired tokens and other HTTP errors.
+    // A missing, invalid, or expired token usually gives 401.
     if (!response.ok) {
-        throw new Error(`Failed to fetch users: ${response.status}`);
+        throw new Error(
+            response.status === 401
+                ? 'Your session has expired. Please log in again.'
+                : 'Failed to fetch users'
+        );
     }
 
     return response.json();
 }
 
-//login user 
-
-/*
-  Sends login credentials to our NestJS backend
-  and returns the response containing the JWT.
-*/
+// Log in and receive a JWT.
 export async function loginUser(email, password) {
+    const response = await fetch(`${AUTH_URL}/login`, {
+        method: 'POST',
 
-    // Send the login request to our new JWT endpoint.
-    const response = await fetch(
-        'http://localhost:3000/auth/login',
-        {
-            method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
 
-            // Tell NestJS that we are sending JSON data.
-            headers: {
-                'Content-Type': 'application/json',
-            },
+        body: JSON.stringify({
+            email,
+            password,
+        }),
+    });
 
-            // Convert our email and password into JSON.
-            body: JSON.stringify({
-                email,
-                password,
-            }),
-        }
-    );
+    const data = await response.json();
 
-    // Handle HTTP errors, such as 400 or 500.
+    // The backend returns 401 when credentials are incorrect.
     if (!response.ok) {
-        throw new Error('Login request failed');
+        const error = new Error(
+            data.message || 'Login failed'
+        );
+
+        // Store the HTTP status code inside the error.
+        error.statusCode = response.status;
+
+        throw error;
     }
 
-    // Convert the JSON response into a JavaScript object.
-    // It contains success, message and access_token.
-    return response.json();
+    // Return the response, including access_token.
+    return data;
 }

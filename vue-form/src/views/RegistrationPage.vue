@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, ref, onMounted } from 'vue';
+import { reactive, ref, onMounted, computed } from 'vue';
 import { createUser, getUsers } from '../services/userService.js';
 
 import { useRouter } from 'vue-router';
@@ -19,6 +19,16 @@ const form = reactive({
     age: '',
 });
 
+//disable button
+const isFormValid = computed(() => {
+    return (
+        form.name.trim().length >= 3 &&
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) &&
+        form.password.length >= 6 &&
+        Number.isInteger(Number(form.age)) &&
+        Number(form.age) >= 18
+    );
+});
 
 /*
   Store validation errors separately from form data.
@@ -42,6 +52,8 @@ const errorMessage = ref('');
 
 // Controls whether the success popup is visible.
 const showSuccessPopup = ref(false);
+const showTermsPopup = ref(false);
+
 const pendingUserData = ref(null);
 
 /*
@@ -209,15 +221,11 @@ async function handlePopupOk() {
         router.push('/dashboard');
 
     } catch (error) {
+        console.error('Registration failed:', error);
 
-        console.error(
-            'Registration failed:',
-            error
-        );
-
+        // Display the status code and backend message.
         errorMessage.value =
-            'Unable to register the user. Please try again.';
-
+            `${error.statusCode || 'Error'} - ${error.message}`;
     } finally {
 
         isSubmitting.value = false;
@@ -299,10 +307,15 @@ function handlePopupCancel() {
                     </small>
                 </div>
 
+                <!-- text Button -->
+                <el-button type="primary" text @click="showTermsPopup = true">
+                    Terms and Conditions
+                </el-button>
+
                 <!-- Submit button -->
-                <button type="submit" :disabled="isSubmitting">
+                <el-button type="primary" native-type="submit" :loading="isSubmitting" :disabled="!isFormValid">
                     {{ isSubmitting ? 'Registering...' : 'Register' }}
-                </button>
+                </el-button>
 
                 <!-- General error message -->
                 <p v-if="errorMessage" class="error-message" role="alert">
@@ -311,12 +324,27 @@ function handlePopupCancel() {
                 <div class="login-link">
                     <span>Already have an account?</span>
 
-                    <button @click="router.push('/login')">
+                    <el-button text @click="router.push('/login')">
                         Login
-                    </button>
+                    </el-button>
                 </div>
 
             </form>
+            <el-dialog v-model="showTermsPopup" title="Terms and Conditions" width="500px">
+                <p>
+                    By registering, you agree to our Terms and Conditions.
+                </p>
+
+                <p>
+                    Please make sure that the information you provide is correct.
+                </p>
+
+                <template #footer>
+                    <el-button @click="showTermsPopup = false">
+                        Close
+                    </el-button>
+                </template>
+            </el-dialog>
         </section>
 
         <!-- Success popup -->
@@ -327,10 +355,6 @@ function handlePopupCancel() {
                 <h2 id="popup-title">Registering User</h2>
 
                 <p>{{ successMessage }}</p>
-
-                <!-- <p class="popup-note">
-                    Your registration has been submitted.
-                </p> -->
 
                 <div class="popup-actions">
                     <button type="button" class="cancel-button" @click="handlePopupCancel">
@@ -452,7 +476,7 @@ form>button {
 }
 
 form>button:hover:not(:disabled) {
-    background: #3730a3;
+    background: #000000;
 }
 
 button:disabled {
@@ -610,7 +634,7 @@ button:disabled {
     padding: 9px 12px;
     background: #e5e7eb;
     color: #374151;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 .refresh-button:hover:not(:disabled) {
@@ -643,5 +667,13 @@ button:disabled {
 .empty-message {
     color: #6b7280;
     font-size: 14px;
+}
+
+.app {
+    width: 100%;
+    max-width: 500px;
+    padding: 40px;
+    background: rgb(255, 253, 253);
+    border-radius: var(--el-border-radius-base);
 }
 </style>

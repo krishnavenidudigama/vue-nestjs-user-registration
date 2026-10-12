@@ -4,6 +4,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import RegistrationPage from '../views/RegistrationPage.vue';
 import DashboardPage from '../views/DashboardPage.vue';
 import LoginPage from '../views/LoginPage.vue';
+import AddEmployeePage from '../views/AddEmployeePage.vue';
 
 const routes = [
     {
@@ -27,6 +28,14 @@ const routes = [
             requiresAuth: true,
         },
     },
+    {
+        path: '/employees/add',
+        name: 'AddEmployee',
+        component: AddEmployeePage,
+        meta: {
+            requiresAuth: true,
+        },
+    }
 ];
 
 const router = createRouter({

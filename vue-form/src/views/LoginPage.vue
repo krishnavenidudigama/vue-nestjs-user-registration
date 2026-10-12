@@ -48,7 +48,8 @@ async function handleLogin() {
 
     } catch (err) {
         console.error(err);
-        error.value = err.message || 'Unable to login. Please try again.';
+        error.value =
+            `${err.statusCode || 'Error'} - ${err.message || 'Unable to login. Please try again.'}`;
     } finally {
         loading.value = false;
     }
@@ -69,31 +70,20 @@ async function handleLogin() {
                 <div class="form-group">
                     <label>Email</label>
 
-                    <input
-                        v-model="email"
-                        type="email"
-                        placeholder="Enter your email"
-                    />
+                    <input v-model="email" type="email" placeholder="Enter your email" />
                 </div>
 
                 <div class="form-group">
                     <label>Password</label>
 
-                    <input
-                        v-model="password"
-                        type="password"
-                        placeholder="Enter your password"
-                    />
+                    <input v-model="password" type="password" placeholder="Enter your password" />
                 </div>
 
                 <p v-if="error" class="error">
                     {{ error }}
                 </p>
 
-                <button
-                    type="submit"
-                    :disabled="loading"
-                >
+                <button type="submit" :disabled="loading">
                     {{ loading ? 'Logging in...' : 'Login' }}
                 </button>
 
@@ -130,7 +120,7 @@ async function handleLogin() {
     margin-bottom: 5px;
 }
 
-.login-card > p {
+.login-card>p {
     margin-bottom: 25px;
 }
 
